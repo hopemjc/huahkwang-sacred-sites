@@ -25,131 +25,171 @@
   // ===== 八大聖地共用照片相簿 =====
   var galleries = document.querySelectorAll('[data-gallery]');
 
-  galleries.forEach(function (gallery) {
-    var count = Number(gallery.dataset.galleryCount);
-    var path = gallery.dataset.galleryPath;
-    var prefix = gallery.dataset.galleryPrefix;
+galleries.forEach(function (gallery) {
+  var count = Number(gallery.dataset.galleryCount);
+  var path = gallery.dataset.galleryPath;
+  var prefix = gallery.dataset.galleryPrefix;
 
-    var mainImage = gallery.querySelector('[data-gallery-main]');
-    var secondImage = gallery.querySelector('.gallery-image-b');
-    var thumbsContainer = gallery.querySelector('[data-gallery-thumbs]');
-    var prevButton = gallery.querySelector('.gallery-prev');
-    var nextButton = gallery.querySelector('.gallery-next');
+  var trio = gallery.querySelector('[data-gallery-trio]');
+  var trioImages = gallery.querySelectorAll('.gallery-trio-image');
+  var thumbsContainer = gallery.querySelector('[data-gallery-thumbs]');
+  var prevButton = gallery.querySelector('.gallery-prev');
+  var nextButton = gallery.querySelector('.gallery-next');
 
-    if (!count || !path || !prefix || !mainImage || !thumbsContainer) {
-      return;
+  if (!count || !path || !prefix || !trio || trioImages.length !== 3 || !thumbsContainer) {
+    return;
+  }
+
+  var currentStart = 1;
+  var autoPlayTimer;
+
+  function imageNumber(index) {
+    return String(index).padStart(2, '0');
+  }
+
+  function fullImagePath(index) {
+    return path + '/full/' + prefix + '-' + imageNumber(index) + '.jpeg';
+  }
+
+  function thumbImagePath(index) {
+    return path + '/thumbs/' + prefix + '-' + imageNumber(index) + '.jpeg';
+  }
+
+  function normalizeIndex(index) {
+    while (index < 1) {
+      index += count;
     }
 
-    var currentIndex = 1;
-    var autoPlayTimer;
-    var activeImage = mainImage;
-    var inactiveImage = secondImage;
-
-    function imageNumber(index) {
-      return String(index).padStart(2, '0');
+    while (index > count) {
+      index -= count;
     }
 
-    function fullImagePath(index) {
-      return path + '/full/' + prefix + '-' + imageNumber(index) + '.jpeg';
+    return index;
+  }
+
+function showGroup(startIndex) {
+  startIndex = normalizeIndex(startIndex);
+  currentStart = startIndex;
+
+  trio.classList.add('is-changing');
+
+  setTimeout(function () {
+trioImages.forEach(function (image, position) {
+  var imageIndex = normalizeIndex(startIndex + position);
+
+  image.src = fullImagePath(imageIndex);
+  image.alt = '菩提迦耶照片 ' + imageIndex;
+  image.dataset.galleryImage = imageIndex;
+
+  var photo = image.closest('.gallery-photo');
+  var caption = photo ? photo.querySelector('.gallery-photo-caption') : null;
+  var captionData = window.bodhgayaGallery
+    ? window.bodhgayaGallery[imageIndex]
+    : null;
+
+  if (caption) {
+    caption.textContent = captionData ? captionData.caption : '';
+  }
+
+  var photo = image.closest('.gallery-photo');
+  var number = photo.querySelector('.gallery-photo-number');
+
+  if (number) {
+    number.textContent =
+      imageNumber(imageIndex) + ' / ' + imageNumber(count);
+  }
+});
+
+    var visibleIndexes = [
+      normalizeIndex(startIndex),
+      normalizeIndex(startIndex + 1),
+      normalizeIndex(startIndex + 2)
+    ];
+
+    var thumbs = gallery.querySelectorAll('.gallery-thumb');
+
+    thumbs.forEach(function (thumb, thumbIndex) {
+      var imageIndex = thumbIndex + 1;
+      var isActive = visibleIndexes.indexOf(imageIndex) !== -1;
+
+      thumb.classList.toggle('is-active', isActive);
+    });
+
+    var firstActiveThumb = thumbs[startIndex - 1];
+
+    if (firstActiveThumb) {
+      var targetLeft =
+        firstActiveThumb.offsetLeft -
+        thumbsContainer.clientWidth / 2 +
+        firstActiveThumb.clientWidth / 2;
+
+      thumbsContainer.scrollTo({
+        left: targetLeft,
+        behavior: 'smooth'
+      });
     }
 
-    function thumbImagePath(index) {
-      return path + '/thumbs/' + prefix + '-' + imageNumber(index) + '.jpeg';
-    }
+    requestAnimationFrame(function () {
+      trio.classList.remove('is-changing');
+    });
+  }, 600);
+}
 
-    function showImage(index) {
-      if (index < 1) {
-        index = count;
-      }
+  function galleryStep() {
+    return window.matchMedia('(max-width: 560px)').matches ? 1 : 3;
+  }
 
-      if (index > count) {
-        index = 1;
-      }
+  function restartAutoPlay() {
+    clearInterval(autoPlayTimer);
 
-      currentIndex = index;
+    autoPlayTimer = setInterval(function () {
+    showGroup(currentStart + galleryStep());
+}, 6000);
+  }
 
-      var nextSrc = fullImagePath(index);
+  for (var i = 1; i <= count; i++) {
+    (function (index) {
+      var button = document.createElement('button');
+      button.className = 'gallery-thumb';
+      button.type = 'button';
+      button.setAttribute('aria-label', '顯示包含第 ' + index + ' 張照片的組合');
 
-      inactiveImage.onload = function () {
-        inactiveImage.classList.add('is-visible');
-        activeImage.classList.remove('is-visible');
+      var image = document.createElement('img');
+      image.src = thumbImagePath(index);
+      image.alt = '';
+      image.loading = 'lazy';
 
-        var oldActiveImage = activeImage;
-        activeImage = inactiveImage;
-        inactiveImage = oldActiveImage;
+      button.appendChild(image);
 
-        inactiveImage.onload = null;
-      };
-
-      inactiveImage.src = nextSrc;
-      inactiveImage.alt = '照片 ' + index;
-
-      var thumbs = gallery.querySelectorAll('.gallery-thumb');
-
-      thumbs.forEach(function (thumb, thumbIndex) {
-        var isActive = thumbIndex + 1 === index;
-        thumb.classList.toggle('is-active', isActive);
-
-        if (isActive) {
-          var targetLeft =
-            thumb.offsetLeft -
-            thumbsContainer.clientWidth / 2 +
-            thumb.clientWidth / 2;
-
-          thumbsContainer.scrollTo({
-            left: targetLeft,
-            behavior: 'smooth'
-          });
+      button.addEventListener('click', function () {
+        if (galleryStep() === 1) {
+          showGroup(index);
+        } else {
+          var groupStart = Math.floor((index - 1) / 3) * 3 + 1;
+          showGroup(groupStart);
         }
-      });
-    }
-
-    function restartAutoPlay() {
-      clearInterval(autoPlayTimer);
-
-      autoPlayTimer = setInterval(function () {
-        showImage(currentIndex + 1);
-      }, 6000);
-    }
-
-    for (var i = 1; i <= count; i++) {
-      (function (index) {
-        var button = document.createElement('button');
-        button.className = 'gallery-thumb';
-        button.type = 'button';
-        button.setAttribute('aria-label', '顯示第 ' + index + ' 張照片');
-
-        var image = document.createElement('img');
-        image.src = thumbImagePath(index);
-        image.alt = '';
-        image.loading = 'lazy';
-
-        button.appendChild(image);
-
-        button.addEventListener('click', function () {
-          showImage(index);
-          restartAutoPlay();
-        });
-
-        thumbsContainer.appendChild(button);
-      })(i);
-    }
-
-    if (prevButton) {
-      prevButton.addEventListener('click', function () {
-        showImage(currentIndex - 1);
         restartAutoPlay();
       });
-    }
 
-    if (nextButton) {
-      nextButton.addEventListener('click', function () {
-        showImage(currentIndex + 1);
-        restartAutoPlay();
-      });
-    }
+      thumbsContainer.appendChild(button);
+    })(i);
+  }
 
-    showImage(1);
-    restartAutoPlay();
-  });
+  if (prevButton) {
+    prevButton.addEventListener('click', function () {
+      showGroup(currentStart - galleryStep());
+      restartAutoPlay();
+    });
+  }
+
+  if (nextButton) {
+    nextButton.addEventListener('click', function () {
+      showGroup(currentStart + galleryStep());
+      restartAutoPlay();
+    });
+  }
+
+  showGroup(1);
+  restartAutoPlay();
+});
 })();
