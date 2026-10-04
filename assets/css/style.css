@@ -947,6 +947,7 @@ th {
   }
 }
 
+
 .gallery-trio {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -954,11 +955,12 @@ th {
   width: 100%;
   padding: 0 48px;
   opacity: 1;
-  transition: opacity 0.8s ease-in-out;
+  transition: opacity 1.15s ease-in-out;
 }
 
 .gallery-trio.is-changing {
-  opacity: 0;
+  opacity: 0.25;
+  transition-duration: 0.8s;
 }
 
 .gallery-trio-image {
@@ -1061,4 +1063,43 @@ th {
 .gallery-next {
   right: 6px;
 }
+}
+
+/* ===== 文章展開／收合 ===== */
+
+.article-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+  grid-template-rows 0.9s ease,
+  opacity 0.75s ease;
+}
+
+.article-more-inner {
+  overflow: hidden;
+}
+
+.article-more.is-expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition-duration: 1.3s, 1.0s;
+}
+
+.article-more-inner > p:first-child {
+  margin-top: 1.5em;
+}
+
+.article-expand {
+  padding: 0 0 3px;
+  border: 0;
+  border-bottom: 1px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-earth-dark);
+  font: inherit;
+  cursor: pointer;
+}
+
+.article-content .article-expand + hr {
+  margin: 26px 0;
 }

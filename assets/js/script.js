@@ -130,9 +130,11 @@ trioImages.forEach(function (image, position) {
     }
 
     requestAnimationFrame(function () {
-      trio.classList.remove('is-changing');
+      requestAnimationFrame(function () {
+        trio.classList.remove('is-changing');
+      }); 
     });
-  }, 600);
+  }, 800);
 }
 
   function galleryStep() {
@@ -193,3 +195,20 @@ trioImages.forEach(function (image, position) {
   restartAutoPlay();
 });
 })();
+
+/* ===== 文章展開／收合 ===== */
+
+document.querySelectorAll('.article-expand').forEach(function (button) {
+  button.addEventListener('click', function () {
+    var targetId = button.getAttribute('aria-controls');
+    var content = document.getElementById(targetId);
+
+    if (!content) return;
+
+    var isExpanded = button.getAttribute('aria-expanded') === 'true';
+
+    content.classList.toggle('is-expanded', !isExpanded);
+    button.setAttribute('aria-expanded', String(!isExpanded));
+    button.textContent = isExpanded ? '閱讀完整介紹' : '收起完整介紹';
+  });
+});
