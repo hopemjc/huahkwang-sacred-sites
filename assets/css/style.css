@@ -804,7 +804,7 @@ th {
 .gallery-main {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   width: 100%;
   height: 70vh;
@@ -912,9 +912,10 @@ th {
 }
 
 .gallery-main {
-  height: 55vh;
-  min-height: 300px;
-  max-height: 520px;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 .gallery-arrow {
@@ -963,16 +964,6 @@ th {
   transition-duration: 0.8s;
 }
 
-.gallery-trio-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  height: auto;
-  object-fit: cover;
-  object-position: center center;
-  border-radius: 6px;
-}
-
 .gallery-photo {
   margin: 0;
   min-width: 0;
@@ -1001,6 +992,45 @@ th {
   line-height: 1.5;
   white-space: normal;
   overflow-wrap: break-word;
+  text-align: center;
+}
+
+.gallery-photo-caption.is-multiline {
+  text-align: left;
+}
+
+/* 固定 4:3 照片框：
+   前景完整顯示原圖，空出的區域以同一張照片模糊填滿 */
+.gallery-image-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #ddd;
+}
+
+.gallery-image-frame::before {
+  content: "";
+  position: absolute;
+  inset: -20px;
+  background-image: var(--gallery-bg);
+  background-size: cover;
+  background-position: center center;
+  filter: blur(16px);
+  transform: scale(1.08);
+  opacity: 0.55;
+}
+
+.gallery-trio-image {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
 }
 
 /* 手機版相簿：單張滿寬顯示 */
@@ -1026,15 +1056,6 @@ th {
 
   .gallery-photo:first-child {
     display: block;
-  }
-
-  .gallery-trio-image {
-    display: block;
-    width: 100%;
-    height: 75vw;
-    max-height: 360px;
-    object-fit: cover;
-    object-position: center center;
   }
 
   .gallery-arrow {

@@ -74,31 +74,56 @@ function showGroup(startIndex) {
   trio.classList.add('is-changing');
 
   setTimeout(function () {
-trioImages.forEach(function (image, position) {
-  var imageIndex = normalizeIndex(startIndex + position);
+  trioImages.forEach(function (image, position) {
+      var imageIndex = normalizeIndex(startIndex + position);
+      var imagePath = fullImagePath(imageIndex);
 
-  image.src = fullImagePath(imageIndex);
-  image.alt = '菩提迦耶照片 ' + imageIndex;
-  image.dataset.galleryImage = imageIndex;
+      image.src = imagePath;
+      image.alt = '菩提迦耶照片 ' + imageIndex;
+      image.dataset.galleryImage = imageIndex;
 
-  var photo = image.closest('.gallery-photo');
-  var caption = photo ? photo.querySelector('.gallery-photo-caption') : null;
-  var captionData = window.bodhgayaGallery
-    ? window.bodhgayaGallery[imageIndex]
-    : null;
+      var photo = image.closest('.gallery-photo');
 
-  if (caption) {
-    caption.textContent = captionData ? captionData.caption : '';
-  }
+      if (!photo) {
+        return;
+      }
 
-  var photo = image.closest('.gallery-photo');
-  var number = photo.querySelector('.gallery-photo-number');
+      var frame = image.closest('.gallery-image-frame');
 
-  if (number) {
-    number.textContent =
-      imageNumber(imageIndex) + ' / ' + imageNumber(count);
-  }
-});
+      if (frame) {
+        frame.style.setProperty(
+        '--gallery-bg',
+        'url("' + new URL(imagePath, document.baseURI).href + '")'
+      );
+      }
+
+      var caption = photo.querySelector('.gallery-photo-caption');
+      var number = photo.querySelector('.gallery-photo-number');
+
+      var captionData = window.bodhgayaGallery
+        ? window.bodhgayaGallery[imageIndex]
+        : null;
+
+      if (caption) {
+        caption.textContent = captionData ? captionData.caption : '';
+
+        requestAnimationFrame(function () {
+          var range = document.createRange();
+          range.selectNodeContents(caption);
+
+          var textHeight = range.getBoundingClientRect().height;
+          var lineHeight = parseFloat(getComputedStyle(caption).lineHeight);
+          var isMultiLine = textHeight > lineHeight * 1.5;
+
+          caption.classList.toggle('is-multiline', isMultiLine);
+        });
+      }
+
+      if (number) {
+        number.textContent =
+          imageNumber(imageIndex) + ' / ' + imageNumber(count);
+      }
+    });
 
     var visibleIndexes = [
       normalizeIndex(startIndex),
