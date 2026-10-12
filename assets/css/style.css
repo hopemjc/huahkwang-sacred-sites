@@ -1205,6 +1205,7 @@ th {
 }
 
 .lightbox-number {
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 0.9rem;
   letter-spacing: 0.06em;
 }
@@ -1330,5 +1331,16 @@ th {
   #bodhgaya-lightbox,
   #bodhgaya-lightbox .lightbox-image {
     animation: none;
+  }
+}
+
+/* 菩提伽耶：照片導覽定位 */
+#gallery-photo-start {
+  scroll-margin-top: 80px;
+}
+
+@media (max-width: 860px) {
+  #gallery-photo-start {
+    scroll-margin-top: 72px;
   }
 }

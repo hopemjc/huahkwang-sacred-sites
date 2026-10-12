@@ -382,8 +382,11 @@ function showGroup(startIndex) {
   }
 
 
-  // 菩提伽耶：從 Hero 進入照片導覽時重新播放
-  var photoGuideLink = document.querySelector('a[href="#photo-gallery"]');
+
+  // 菩提伽耶：照片導覽重新從第一張播放
+  var photoGuideLink = document.querySelector(
+    'a[href="#gallery-photo-start"]'
+  );
 
   if (photoGuideLink && gallery.closest('#photo-gallery')) {
     photoGuideLink.addEventListener('click', function () {
