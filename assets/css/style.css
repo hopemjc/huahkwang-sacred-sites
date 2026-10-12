@@ -960,7 +960,7 @@ th {
 }
 
 .gallery-trio.is-changing {
-  opacity: 0.25;
+  opacity: 0;
   transition-duration: 0.8s;
 }
 
@@ -1034,7 +1034,26 @@ th {
 }
 
 /* 手機版相簿：單張滿寬顯示 */
-@media (max-width: 560px) {
+
+  /* 菩提伽耶：手機版照片依原始比例顯示 */
+  @media (max-width: 560px) {
+
+  #photo-gallery .gallery-image-frame {
+    aspect-ratio: auto;
+    height: auto;
+    overflow: hidden;
+  }
+
+  #photo-gallery .gallery-image-frame::before {
+    display: none;
+  }
+
+  #photo-gallery .gallery-trio-image {
+    position: static;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
 
   .gallery-main {
     position: relative;
@@ -1123,4 +1142,193 @@ th {
 
 .article-content .article-expand + hr {
   margin: 26px 0;
+}
+
+/* ===== 菩提伽耶照片放大視窗 Lightbox ===== */
+
+.gallery-lightbox[hidden] {
+  display: none;
+}
+
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgba(20, 17, 14, 0.94);
+  color: #fffdf8;
+  overflow: hidden;
+}
+
+
+.lightbox-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+}
+
+
+.lightbox-image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100vw;
+  max-height: 100dvh;
+  min-height: 0;
+  flex: 0 1 auto;
+  object-fit: contain;
+}
+
+
+.lightbox-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  max-height: 30dvh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 14px 65px 18px;
+  background: rgba(20, 17, 14, 0.50);
+  text-align: center;
+}
+
+.lightbox-number {
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+}
+
+.lightbox-caption {
+  max-width: 800px;
+  margin: 8px auto 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.lightbox-close,
+.lightbox-prev,
+.lightbox-next {
+  position: absolute;
+  z-index: 2;
+  border: 0;
+  color: #fffdf8;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lightbox-close {
+  top: 12px;
+  right: 20px;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.lightbox-prev,
+.lightbox-next {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 60px;
+  font-size: 48px;
+  line-height: 1;
+}
+
+.lightbox-prev {
+  left: 8px;
+}
+
+.lightbox-next {
+  right: 8px;
+}
+
+.gallery-lightbox button:focus-visible {
+  outline: 2px solid #e8c982;
+  outline-offset: 4px;
+}
+
+@media (max-width: 560px) {
+  .gallery-lightbox {
+    padding: 60px 42px 24px;
+  }
+
+  .lightbox-info {
+    padding: 12px 42px 18px;
+  }
+
+  .lightbox-prev,
+  .lightbox-next {
+    width: 36px;
+    font-size: 36px;
+  }
+
+  .lightbox-prev {
+    left: 2px;
+  }
+
+  .lightbox-next {
+    right: 2px;
+  }
+
+  .lightbox-caption {
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== 菩提伽耶 Crossfade：舊照片覆蓋層 ===== */
+#photo-gallery .gallery-trio.gallery-crossfade-old {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 1.8s ease-in-out;
+}
+
+/* Crossfade 舊圖層：只保留照片，不顯示文字 */
+#photo-gallery .gallery-crossfade-old .gallery-photo-info {
+  visibility: hidden;
+}
+
+
+/* ===== 菩提伽耶：桌機版左右箭頭固定於照片中央 ===== */
+@media (min-width: 561px) {
+  #photo-gallery .gallery-main {
+    container-type: inline-size;
+  }
+
+  #photo-gallery .gallery-arrow {
+    top: calc((100cqw - 124px) / 8);
+  }
+}
+
+/* 菩提伽耶：桌機左右箭頭位置微調 */
+@media (min-width: 561px) {
+  #photo-gallery .gallery-prev {
+    left: 28px;
+  }
+
+  #photo-gallery .gallery-next {
+    right: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #bodhgaya-lightbox,
+  #bodhgaya-lightbox .lightbox-image {
+    animation: none;
+  }
 }

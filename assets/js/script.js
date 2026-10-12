@@ -42,6 +42,121 @@ galleries.forEach(function (gallery) {
 
   var currentStart = 1;
   var autoPlayTimer;
+  var changeSerial = 0;
+  var fadingOverlay = null;
+
+  // ===== 菩提伽耶 Lightbox：點擊主圖放大 =====
+  var lightbox = document.getElementById('bodhgaya-lightbox');
+
+  if (lightbox && gallery.contains(trio)) {
+    var lightboxImage = lightbox.querySelector('.lightbox-image');
+    var lightboxNumber = lightbox.querySelector('.lightbox-number');
+    var lightboxCaption = lightbox.querySelector('.lightbox-caption');
+
+    trioImages.forEach(function (image) {
+      image.style.cursor = 'zoom-in';
+
+      image.addEventListener('click', function () {
+        var index = Number(image.dataset.galleryImage);
+        if (!index) return;
+        lightboxCurrentIndex = index;
+        var captionData = window.bodhgayaGallery
+          ? window.bodhgayaGallery[index]
+          : null;
+
+        lightboxImage.src = fullImagePath(index);
+        lightboxImage.alt = image.alt;
+        lightboxNumber.textContent =
+          imageNumber(index) + ' / ' + imageNumber(count);
+        lightboxCaption.textContent =
+          captionData ? captionData.caption : '';
+
+        lightbox.hidden = false;
+        document.body.style.overflow = 'hidden';
+        clearInterval(autoPlayTimer);
+      });
+    });
+  }
+
+  // ===== Lightbox 左右切換功能 =====
+  if (lightbox) {
+    var lightboxPrev = lightbox.querySelector('.lightbox-prev');
+    var lightboxNext = lightbox.querySelector('.lightbox-next');
+    var lightboxCurrentIndex = 1;
+
+    function showLightboxImage(index) {
+      index = normalizeIndex(index);
+      lightboxCurrentIndex = index;
+
+      var captionData = window.bodhgayaGallery
+        ? window.bodhgayaGallery[index]
+        : null;
+
+      lightboxImage.src = fullImagePath(index);
+      lightboxImage.alt = '菩提伽耶照片 ' + index;
+
+      lightboxNumber.textContent =
+        imageNumber(index) + ' / ' + imageNumber(count);
+
+      lightboxCaption.textContent =
+        captionData ? captionData.caption : '';
+    }
+
+    lightboxPrev.addEventListener('click', function () {
+      showLightboxImage(lightboxCurrentIndex - 1);
+    });
+
+    lightboxNext.addEventListener('click', function () {
+      showLightboxImage(lightboxCurrentIndex + 1);
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (lightbox.hidden) return;
+
+      if (event.key === 'ArrowLeft') {
+        showLightboxImage(lightboxCurrentIndex - 1);
+      }
+
+      if (event.key === 'ArrowRight') {
+        showLightboxImage(lightboxCurrentIndex + 1);
+      }
+    });
+  }
+
+  // ===== Lightbox 關閉功能 =====
+  if (lightbox) {
+    var closeLightboxButton = lightbox.querySelector('.lightbox-close');
+
+    
+function closeLightbox() {
+    lightbox.hidden = true;
+    document.body.style.overflow = '';
+
+    // 從放大視窗最後觀看的照片繼續輪播
+    showGroup(lightboxCurrentIndex);
+
+    // 重新開始原本的 6 秒自動輪播
+    restartAutoPlay();
+  }
+
+
+    if (closeLightboxButton) {
+      closeLightboxButton.addEventListener('click', closeLightbox);
+    }
+
+    lightbox.addEventListener('click', function (event) {
+      if (event.target === lightbox ||
+          event.target.classList.contains('lightbox-content')) {
+        closeLightbox();
+      }
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (!lightbox.hidden && event.key === 'Escape') {
+        closeLightbox();
+      }
+    });
+  }
 
   function imageNumber(index) {
     return String(index).padStart(2, '0');
@@ -67,34 +182,71 @@ galleries.forEach(function (gallery) {
     return index;
   }
 
+
 function showGroup(startIndex) {
   startIndex = normalizeIndex(startIndex);
   currentStart = startIndex;
 
-  trio.classList.add('is-changing');
+  // 避免快速切換時，較早的載入結果覆蓋新結果
+  var serial = ++changeSerial;
 
-  setTimeout(function () {
-  trioImages.forEach(function (image, position) {
-      var imageIndex = normalizeIndex(startIndex + position);
+  // 移除上一次尚未淡出完畢的覆蓋層
+  if (fadingOverlay) {
+    fadingOverlay.remove();
+    fadingOverlay = null;
+  }
+
+  var indexes = [0, 1, 2].map(function (position) {
+    return normalizeIndex(startIndex + position);
+  });
+
+  // 先載入下一組照片，再開始切換
+  var preloadTasks = indexes.map(function (index) {
+    return new Promise(function (resolve) {
+      var preloader = new Image();
+      preloader.onload = resolve;
+      preloader.onerror = resolve;
+      preloader.src = fullImagePath(index);
+
+      if (preloader.complete) resolve();
+    });
+  });
+
+  Promise.all(preloadTasks).then(function () {
+    if (serial !== changeSerial) return;
+
+    var main = gallery.querySelector('.gallery-main');
+    var oldLayer = null;
+
+    // 首次載入不需要轉場
+    if (trio.dataset.galleryReady === 'true' && main) {
+      oldLayer = trio.cloneNode(true);
+      oldLayer.classList.remove('is-changing');
+      oldLayer.classList.add('gallery-crossfade-old');
+      oldLayer.setAttribute('aria-hidden', 'true');
+
+      main.appendChild(oldLayer);
+      fadingOverlay = oldLayer;
+    }
+
+    // 更新底層三張照片
+    trioImages.forEach(function (image, position) {
+      var imageIndex = indexes[position];
       var imagePath = fullImagePath(imageIndex);
 
       image.src = imagePath;
-      image.alt = '菩提迦耶照片 ' + imageIndex;
+      image.alt = '菩提伽耶照片 ' + imageIndex;
       image.dataset.galleryImage = imageIndex;
 
       var photo = image.closest('.gallery-photo');
-
-      if (!photo) {
-        return;
-      }
+      if (!photo) return;
 
       var frame = image.closest('.gallery-image-frame');
-
       if (frame) {
         frame.style.setProperty(
-        '--gallery-bg',
-        'url("' + new URL(imagePath, document.baseURI).href + '")'
-      );
+          '--gallery-bg',
+          'url("' + new URL(imagePath, document.baseURI).href + '")'
+        );
       }
 
       var caption = photo.querySelector('.gallery-photo-caption');
@@ -125,18 +277,12 @@ function showGroup(startIndex) {
       }
     });
 
-    var visibleIndexes = [
-      normalizeIndex(startIndex),
-      normalizeIndex(startIndex + 1),
-      normalizeIndex(startIndex + 2)
-    ];
-
+    // 更新縮圖選取狀態
     var thumbs = gallery.querySelectorAll('.gallery-thumb');
 
     thumbs.forEach(function (thumb, thumbIndex) {
       var imageIndex = thumbIndex + 1;
-      var isActive = visibleIndexes.indexOf(imageIndex) !== -1;
-
+      var isActive = indexes.indexOf(imageIndex) !== -1;
       thumb.classList.toggle('is-active', isActive);
     });
 
@@ -154,13 +300,32 @@ function showGroup(startIndex) {
       });
     }
 
-    requestAnimationFrame(function () {
+    trio.dataset.galleryReady = 'true';
+
+    // 舊照片慢慢消失，露出已載入的新照片
+    if (oldLayer) {
       requestAnimationFrame(function () {
-        trio.classList.remove('is-changing');
-      }); 
-    });
-  }, 800);
+        requestAnimationFrame(function () {
+          if (serial !== changeSerial) return;
+          oldLayer.style.opacity = '0';
+        });
+      });
+
+      oldLayer.addEventListener('transitionend', function (event) {
+        if (event.target !== oldLayer || event.propertyName !== 'opacity') {
+          return;
+        }
+
+        oldLayer.remove();
+
+        if (fadingOverlay === oldLayer) {
+          fadingOverlay = null;
+        }
+      }, { once: true });
+    }
+  });
 }
+
 
   function galleryStep() {
     return window.matchMedia('(max-width: 560px)').matches ? 1 : 3;
@@ -216,8 +381,20 @@ function showGroup(startIndex) {
     });
   }
 
+
+  // 菩提伽耶：從 Hero 進入照片導覽時重新播放
+  var photoGuideLink = document.querySelector('a[href="#photo-gallery"]');
+
+  if (photoGuideLink && gallery.closest('#photo-gallery')) {
+    photoGuideLink.addEventListener('click', function () {
+      showGroup(1);
+      restartAutoPlay();
+    });
+  }
+
   showGroup(1);
   restartAutoPlay();
+
 });
 })();
 
