@@ -183,7 +183,7 @@ function closeLightbox() {
   }
 
 
-function showGroup(startIndex) {
+function showGroup(startIndex, scrollOnMobile) {
   startIndex = normalizeIndex(startIndex);
   currentStart = startIndex;
 
@@ -322,22 +322,120 @@ function showGroup(startIndex) {
           fadingOverlay = null;
         }
       }, { once: true });
+
+    }
+
+    // 手機版：僅在手動切換照片後調整垂直捲動
+    if (scrollOnMobile &&
+        gallery.closest('#photo-gallery') &&
+        window.matchMedia('(max-width: 560px)').matches) {
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          if (serial !== changeSerial) return;
+
+          var thumbRect = thumbsContainer.getBoundingClientRect();
+          var header = document.querySelector('.site-header');
+          var headerBottom = header
+            ? header.getBoundingClientRect().bottom
+            : 0;
+
+          var lowerLimit = window.innerHeight - 8;
+          var upperLimit = headerBottom + 8;
+          var adjustment = 0;
+
+          if (thumbRect.bottom > lowerLimit) {
+            // 縮圖列超出畫面下方：往下捲動
+            adjustment = thumbRect.bottom - lowerLimit;
+          } else if (thumbRect.top < upperLimit) {
+            // 縮圖列跑到導覽列上方：往上捲動
+            adjustment = thumbRect.top - upperLimit;
+          }
+
+          if (adjustment !== 0) {
+            window.scrollBy({
+              top: adjustment,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
     }
   });
 }
 
 
   function galleryStep() {
+
     return window.matchMedia('(max-width: 560px)').matches ? 1 : 3;
+  }
+
+
+  // ===== 桌機、手機：照片集可見時才自動輪播 =====
+
+  function isGalleryVisible() {
+    if (document.hidden) return false;
+    if (lightbox && !lightbox.hidden) return false;
+
+    var main = gallery.querySelector('.gallery-main');
+    if (!main) return false;
+
+    var rect = main.getBoundingClientRect();
+    var visibleHeight = Math.max(
+      0,
+      Math.min(rect.bottom, window.innerHeight) -
+      Math.max(rect.top, 0)
+    );
+
+    return visibleHeight >= Math.min(120, window.innerHeight * 0.2);
   }
 
   function restartAutoPlay() {
     clearInterval(autoPlayTimer);
+    autoPlayTimer = null;
+
+    if (!isGalleryVisible()) return;
 
     autoPlayTimer = setInterval(function () {
-    showGroup(currentStart + galleryStep());
-}, 6000);
+      if (!isGalleryVisible()) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = null;
+        return;
+      }
+
+      showGroup(currentStart + galleryStep());
+    }, 6000);
   }
+
+  var galleryWasVisible = false;
+  var visibilityCheckPending = false;
+
+  function updateGalleryVisibility() {
+    if (visibilityCheckPending) return;
+    visibilityCheckPending = true;
+
+    requestAnimationFrame(function () {
+      visibilityCheckPending = false;
+
+      var visible = isGalleryVisible();
+
+      if (visible !== galleryWasVisible) {
+        galleryWasVisible = visible;
+        restartAutoPlay();
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateGalleryVisibility, {
+    passive: true
+  });
+
+  window.addEventListener('resize', updateGalleryVisibility);
+
+  document.addEventListener(
+    'visibilitychange',
+    updateGalleryVisibility
+  );
 
   for (var i = 1; i <= count; i++) {
     (function (index) {
@@ -355,10 +453,10 @@ function showGroup(startIndex) {
 
       button.addEventListener('click', function () {
         if (galleryStep() === 1) {
-          showGroup(index);
+          showGroup(index, true);
         } else {
           var groupStart = Math.floor((index - 1) / 3) * 3 + 1;
-          showGroup(groupStart);
+          showGroup(groupStart, true);
         }
         restartAutoPlay();
       });
@@ -369,14 +467,14 @@ function showGroup(startIndex) {
 
   if (prevButton) {
     prevButton.addEventListener('click', function () {
-      showGroup(currentStart - galleryStep());
+      showGroup(currentStart - galleryStep(), true);
       restartAutoPlay();
     });
   }
 
   if (nextButton) {
     nextButton.addEventListener('click', function () {
-      showGroup(currentStart + galleryStep());
+      showGroup(currentStart + galleryStep(), true);
       restartAutoPlay();
     });
   }
@@ -397,6 +495,7 @@ function showGroup(startIndex) {
 
   showGroup(1);
   restartAutoPlay();
+  updateGalleryVisibility();
 
 });
 })();
