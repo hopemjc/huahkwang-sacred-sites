@@ -25,10 +25,20 @@
   // ===== 八大聖地共用照片相簿 =====
   var galleries = document.querySelectorAll('[data-gallery]');
 
-galleries.forEach(function (gallery) {
+
+ galleries.forEach(function (gallery) {
   var count = Number(gallery.dataset.galleryCount);
   var path = gallery.dataset.galleryPath;
   var prefix = gallery.dataset.galleryPrefix;
+
+  var galleryData = window[prefix + 'Gallery'];
+  var gallerySection = gallery.closest('.gallery-section');
+  var galleryHeading = gallerySection
+    ? gallerySection.querySelector('h2')
+    : null;
+  var galleryName = galleryHeading
+    ? galleryHeading.textContent.trim().replace(/現地影像$/, '')
+    : '聖地';
 
   var trio = gallery.querySelector('[data-gallery-trio]');
   var trioImages = gallery.querySelectorAll('.gallery-trio-image');
@@ -46,7 +56,7 @@ galleries.forEach(function (gallery) {
   var fadingOverlay = null;
 
   // ===== 菩提伽耶 Lightbox：點擊主圖放大 =====
-  var lightbox = document.getElementById('bodhgaya-lightbox');
+  var lightbox = document.getElementById(prefix + '-lightbox');
 
   if (lightbox && gallery.contains(trio)) {
     var lightboxImage = lightbox.querySelector('.lightbox-image');
@@ -60,8 +70,8 @@ galleries.forEach(function (gallery) {
         var index = Number(image.dataset.galleryImage);
         if (!index) return;
         lightboxCurrentIndex = index;
-        var captionData = window.bodhgayaGallery
-          ? window.bodhgayaGallery[index]
+        var captionData = galleryData
+          ? galleryData[index]
           : null;
 
         lightboxImage.src = fullImagePath(index);
@@ -88,12 +98,12 @@ galleries.forEach(function (gallery) {
       index = normalizeIndex(index);
       lightboxCurrentIndex = index;
 
-      var captionData = window.bodhgayaGallery
-        ? window.bodhgayaGallery[index]
+      var captionData = galleryData
+        ? galleryData[index]
         : null;
 
       lightboxImage.src = fullImagePath(index);
-      lightboxImage.alt = '菩提伽耶照片 ' + index;
+      lightboxImage.alt = galleryName + '照片 ' + index;
 
       lightboxNumber.textContent =
         imageNumber(index) + ' / ' + imageNumber(count);
@@ -235,7 +245,7 @@ function showGroup(startIndex, scrollOnMobile) {
       var imagePath = fullImagePath(imageIndex);
 
       image.src = imagePath;
-      image.alt = '菩提伽耶照片 ' + imageIndex;
+      image.alt = galleryName + '照片 ' + imageIndex;
       image.dataset.galleryImage = imageIndex;
 
       var photo = image.closest('.gallery-photo');
@@ -252,8 +262,8 @@ function showGroup(startIndex, scrollOnMobile) {
       var caption = photo.querySelector('.gallery-photo-caption');
       var number = photo.querySelector('.gallery-photo-number');
 
-      var captionData = window.bodhgayaGallery
-        ? window.bodhgayaGallery[imageIndex]
+      var captionData = galleryData
+        ? galleryData[imageIndex]
         : null;
 
       if (caption) {
